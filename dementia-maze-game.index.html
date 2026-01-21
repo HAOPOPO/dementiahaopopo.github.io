@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回家的路 - 失智症認知迷宮遊戲</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #a8c686;
+            --soft-cream: #f5f3e8;
+            --warm-brown: #8b6f4e;
+            --gentle-gray: #c7c3b5;
+            --accent-coral: #f4a384;
+            --deep-sage: #6b8e5c;
+            --yes-green: #7cb342;
+            --no-red: #e57373;
+            --path-gray: #b8b5a8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, var(--soft-cream) 0%, #e8e5d5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(168, 198, 134, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(244, 163, 132, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .game-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        /* Story Screen */
+        .story-screen {
+            background: white;
+            border-radius: 30px;
+            padding: 60px 50px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(139, 111, 78, 0.1);
+            text-align: center;
+            animation: fadeInScale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .story-screen h1 {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 3.2rem;
+            color: var(--warm-brown);
+            margin-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .story-subtitle {
+            font-size: 1.1rem;
+            color: var(--deep-sage);
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        .story-content {
+            font-size: 1.4rem;
+            line-height: 2.2;
+            color: #5a5a5a;
+            margin-bottom: 50px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 30px;
+            background: linear-gradient(to bottom, rgba(168, 198, 134, 0.08), rgba(244, 163, 132, 0.05));
+            border-radius: 20px;
+            border: 2px solid rgba(139, 111, 78, 0.15);
+        }
+
+        .grandma-icon {
+            font-size: 6rem;
+            margin-bottom: 30px;
+            display: inline-block;
+            animation: floatGentleStart 3s ease-in-out infinite;
+        }
+
+        @keyframes floatGentleStart {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, var(--deep-sage) 0%, var(--primary-green) 100%);
+            color: white;
+            border: none;
+            padding: 22px 70px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 
+                0 10px 30px rgba(107, 142, 92, 0.3),
+                0 0 0 3px rgba(168, 198, 134, 0.2);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        .start-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 15px 40px rgba(107, 142, 92, 0.4),
+                0 0 0 4px rgba(168, 198, 134, 0.3);
+        }
+
+        .start-button:active {
+            transform: translateY(-2px);
+        }
+
+        /* Game Screen */
+        .game-screen {
+            display: none;
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(139, 111, 78, 0.1);
+        }
+
+        .maze-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto 40px;
+            aspect-ratio: 1 / 1;
+        }
+
+        #mazeCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .grandma-character {
+            position: absolute;
+            font-size: 50px;
+            transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        @keyframes floatGentle {
+            0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+            50% { transform: translate(-50%, -50%) translateY(-5px); }
+        }
+
+        .grandma-character {
+            animation: floatGentle 2s ease-in-out infinite;
+        }
+
+        /* Question Panel */
+        .question-panel {
+            background: linear-gradient(to bottom, #ffffff, #fafaf8);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(139, 111, 78, 0.1);
+            margin-bottom: 30px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .question-panel.show {
+            opacity: 1;
+        }
+
+        .question-number {
+            font-size: 1.1rem;
+            color: var(--warm-brown);
+            font-weight: 600;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .question-text {
+            font-size: 1.6rem;
+            color: #333;
+            margin-bottom: 35px;
+            line-height: 1.8;
+            font-weight: 500;
+        }
+
+        .answer-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .answer-button {
+            flex: 1;
+            max-width: 400px;
+            padding: 20px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            color: white;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.6;
+        }
+
+        .answer-button.yes {
+            background: linear-gradient(135deg, #81c784 0%, var(--yes-green) 100%);
+        }
+
+        .answer-button.no {
+            background: linear-gradient(135deg, #ef5350 0%, var(--no-red) 100%);
+        }
+
+        .answer-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .answer-button:active {
+            transform: translateY(-1px);
+        }
+
+        .answer-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Feedback Screen */
+        .feedback-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .feedback-content {
+            background: white;
+            padding: 50px 60px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .feedback-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .feedback-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+
+        .feedback-title.correct {
+            color: var(--yes-green);
+        }
+
+        .feedback-title.incorrect {
+            color: var(--no-red);
+        }
+
+        .feedback-answer {
+            font-size: 1.3rem;
+            color: #555;
+            line-height: 1.9;
+            padding: 25px;
+            background: rgba(168, 198, 134, 0.1);
+            border-radius: 15px;
+            border-left: 4px solid var(--deep-sage);
+        }
+
+        /* Result Screen */
+        .result-screen {
+            display: none;
+            background: white;
+            border-radius: 30px;
+            padding: 50px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(139, 111, 78, 0.1);
+            text-align: center;
+        }
+
+        .result-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2.8rem;
+            color: var(--warm-brown);
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .result-message {
+            font-size: 1.5rem;
+            color: #555;
+            line-height: 2;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(to bottom, rgba(168, 198, 134, 0.08), rgba(244, 163, 132, 0.05));
+            border-radius: 20px;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            color: var(--deep-sage);
+            font-weight: 700;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(168, 198, 134, 0.15);
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        .answers-review {
+            text-align: left;
+            margin-bottom: 40px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 30px;
+            background: #fafaf8;
+            border-radius: 20px;
+            border: 2px solid rgba(139, 111, 78, 0.1);
+        }
+
+        .answer-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            border-left: 4px solid var(--deep-sage);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .answer-item-header {
+            font-weight: 600;
+            color: var(--warm-brown);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .answer-item-content {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .answer-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .answer-status.correct {
+            background: rgba(124, 179, 66, 0.15);
+            color: var(--yes-green);
+        }
+
+        .answer-status.incorrect {
+            background: rgba(229, 115, 115, 0.15);
+            color: var(--no-red);
+        }
+
+        .restart-button {
+            background: linear-gradient(135deg, var(--accent-coral) 0%, #f48fb1 100%);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(244, 163, 132, 0.3);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        .restart-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(244, 163, 132, 0.4);
+        }
+
+        /* Game Over Screen */
+        .gameover-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .gameover-content {
+            background: white;
+            padding: 50px 60px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: shakeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes shakeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) rotate(-5deg);
+            }
+            50% {
+                transform: scale(1.05) rotate(2deg);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .gameover-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .gameover-title {
+            font-size: 2.2rem;
+            color: var(--no-red);
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .gameover-message {
+            font-size: 1.3rem;
+            color: #555;
+            margin-bottom: 35px;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 768px) {
+            .story-screen {
+                padding: 40px 30px;
+            }
+
+            .story-screen h1 {
+                font-size: 2.2rem;
+            }
+
+            .story-content {
+                font-size: 1.1rem;
+                padding: 20px;
+            }
+
+            .game-screen {
+                padding: 25px;
+            }
+
+            .question-panel {
+                padding: 25px;
+            }
+
+            .question-text {
+                font-size: 1.3rem;
+            }
+
+            .answer-buttons {
+                flex-direction: column;
+            }
+
+            .answer-button {
+                max-width: none;
+            }
+
+            .feedback-content {
+                padding: 35px 30px;
+            }
+
+            .result-screen {
+                padding: 30px 20px;
+            }
+
+            .answers-review {
+                padding: 20px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Story Screen -->
+        <div class="story-screen" id="storyScreen">
+            <div class="grandma-icon">🏡👵</div>
+            <h1>回家的路</h1>
+            <p class="story-subtitle">失智症認知迷宮遊戲</p>
+            <div class="story-content">
+                75歲的郝婆婆患有失智症。<br>
+                今天她出門散步，卻在回家的路上喪失了方向感，因迷路而沮喪。<br><br>
+                請一起來幫幫忙，完成迷宮，<br>
+                協助郝婆婆順利走回家吧！
+            </div>
+            <button class="start-button" onclick="startGame()">開始遊戲</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <div class="maze-container" id="mazeContainer">
+                <canvas id="mazeCanvas"></canvas>
+                <div class="grandma-character" id="grandmaChar">👵</div>
+            </div>
+            <div class="question-panel" id="questionPanel">
+                <div class="question-number" id="questionNumber"></div>
+                <div class="question-text" id="questionText"></div>
+                <div class="answer-buttons">
+                    <button class="answer-button yes" id="yesButton" onclick="answerQuestion(true)"></button>
+                    <button class="answer-button no" id="noButton" onclick="answerQuestion(false)"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Screen -->
+        <div class="feedback-screen" id="feedbackScreen">
+            <div class="feedback-content">
+                <div class="feedback-icon" id="feedbackIcon"></div>
+                <div class="feedback-title" id="feedbackTitle"></div>
+                <div class="feedback-answer" id="feedbackAnswer"></div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div class="gameover-screen" id="gameoverScreen">
+            <div class="gameover-content">
+                <div class="gameover-icon">😰</div>
+                <div class="gameover-title">糟糕！碰壁了！</div>
+                <div class="gameover-message">請重新開始遊戲！</div>
+                <button class="restart-button" onclick="restartGame()">再玩一次</button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div class="result-screen" id="resultScreen">
+            <div class="result-title">🎉 恭喜郝婆婆回到家了！</div>
+            <div class="result-message">
+                感謝您的幫助，讓郝婆婆成功找到回家的路！<br>
+                希望透過這個遊戲，您對失智症有了更深入的認識。
+            </div>
+            <div class="score-display">
+                答對題數：<span id="correctCount">0</span> / <span id="totalCount">0</span>
+            </div>
+            <div class="answers-review" id="answersReview"></div>
+            <button class="restart-button" onclick="restartGame()">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // Maze grid definition
+        const grid = [
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,2,1,4,1,1,1,1,1,4,1,1,4,1,1,4,1,0,0],
+            [0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0],
+            [0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0],
+            [0,0,0,0,4,1,1,4,1,1,4,0,0,4,0,0,4,0,0,0],
+            [0,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],
+            [0,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],
+            [0,0,0,0,4,1,1,4,1,1,4,1,1,4,1,1,4,0,0,0],
+            [0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0],
+            [0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0],
+            [0,0,0,0,4,1,1,4,1,1,4,1,1,4,1,1,4,0,0,0],
+            [0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0],
+            [0,0,0,0,4,1,1,4,1,1,4,1,1,4,1,1,4,0,0,0],
+            [0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0],
+            [0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0],
+            [0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0],
+            [0,0,0,0,4,1,1,4,1,1,4,1,1,1,1,1,4,1,0,0],
+            [0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,1,1,4,1,1,4,1,1,1,1,3,3,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,0,0,0]
+        ];
+
+        // Mapping grid positions to question numbers based on original image
+        const gridToQuestionMap = {
+            '1,4': 2, '1,10': 10, '1,13': 9, '1,16': 13,
+            '4,4': 5, '4,7': 6, '4,10': 4, '4,13': 23, '4,16': 29,
+            '7,4': 28, '7,7': 8, '7,10': 12, '7,13': 21, '7,16': 27,
+            '10,4': 20, '10,7': 16, '10,10': 3, '10,13': 18, '10,16': 24,
+            '12,4': 7, '12,7': 1, '12,10': 17, '12,13': 25, '12,16': 14,
+            '16,4': 11, '16,7': 15, '16,10': 19, '16,16': 26,
+            '18,7': 22, '18,10': 30
+        };
+
+        // Questions data
+        const questions = {
+            1: {
+                text: "失智症患者皆無法自理生活?",
+                yesText: "是，失智症患者無法自理生活",
+                noText: "否，失智症患者不一定無法自理生活，要視其疾病分期和發展而定",
+                correct: false,
+                correctAnswer: "否，失智症患者不一定無法自理生活，要視其疾病分期和發展而定",
+                yesNext: 15,
+                noNext: 17
+            },
+            2: {
+                text: "失智是正常老化的表現之一?",
+                yesText: "是，失智是正常老化的表現之一",
+                noText: "否，失智不是正常老化的表現之一",
+                correct: false,
+                correctAnswer: "否，失智不是正常老化的表現之一",
+                yesNext: 5,
+                noNext: 10
+            },
+            3: {
+                text: "失智症是無法被預防的?",
+                yesText: "是，失智症無法被預防",
+                noText: "否，失智症可以被預防",
+                correct: false,
+                correctAnswer: "否，失智症可以被預防",
+                yesNext: 18,
+                noNext: 16
+            },
+            4: {
+                text: "失智症皆會伴隨失能問題?",
+                yesText: "是，失智症皆會伴隨失能問題",
+                noText: "否，失智症不一定會伴隨失能問題",
+                correct: false,
+                correctAnswer: "否，失智症不一定會伴隨失能問題",
+                yesNext: 6,
+                noNext: 12
+            },
+            5: {
+                text: "老年人才會失智，年輕人不需擔心罹患失智症的問題?",
+                yesText: "是，老年人才會失智，年輕人不需擔心罹患失智症的問題",
+                noText: "否，年輕人也可能會罹患失智症",
+                correct: false,
+                correctAnswer: "否，年輕人也可能會罹患失智症",
+                yesNext: 6,
+                noNext: 28
+            },
+            6: {
+                text: "失智症患者沒有想法，就算有想法也是錯的?",
+                yesText: "是，失智症患者沒有想法，就算有想法也是錯的",
+                noText: "否，失智症患者也會有想法，並非完全喪失認知功能，應適當尊重其想法和感受",
+                correct: false,
+                correctAnswer: "否，失智症患者也會有想法，並非完全喪失認知功能，應適當尊重其想法和感受",
+                yesNext: 5,
+                noNext: 8
+            },
+            7: {
+                text: "目前社區擁有足夠的能力(資源)服務和照顧失智症患者?",
+                yesText: "是，目前社區擁有足夠的能力(資源)服務和照顧失智症患者",
+                noText: "否，目前社區沒有足夠的能力(資源)服務和照顧失智症患者",
+                correct: false,
+                correctAnswer: "否，目前社區沒有足夠的能力(資源)服務和照顧失智症患者",
+                yesNext: 11,
+                noNext: 1
+            },
+            8: {
+                text: "讓失智症患者去住安養機構才是最好的辦法，能讓患者得到最好的照顧，對病情最有幫助?",
+                yesText: "是，讓失智症患者去住安養機構是最好的辦法，對病情最有幫助",
+                noText: "否，讓失智症患者去住安養機構並非最好的辦法，對病情不見得最有幫助",
+                correct: false,
+                correctAnswer: "否，讓失智症患者去住安養機構並非最好的辦法，對病情不見得最有幫助",
+                yesNext: 6,
+                noNext: 16
+            },
+            9: {
+                text: "失智症=失憶?",
+                yesText: "是，失智症就是失憶",
+                noText: "否，失智症雖然會喪失記憶，但並不完全等於失憶症",
+                correct: false,
+                correctAnswer: "否，失智症雖然會喪失記憶，但並不完全等於失憶症",
+                yesNext: 13,
+                noNext: 23
+            },
+            10: {
+                text: "失智症就是阿茲海默症?",
+                yesText: "是，失智症就是阿茲海默症",
+                noText: "否，失智症不完全等於阿茲海默症",
+                correct: false,
+                correctAnswer: "否，失智症不完全等於阿茲海默症",
+                yesNext: 9,
+                noNext: 4
+            },
+            11: {
+                text: "多吃補品或標榜強化腦部功能的保健食品可有效預防失智症?",
+                yesText: "是，多吃補品或標榜強化腦部功能的保健食品可有效預防失智症",
+                noText: "否，目前並沒任何特定一種食物或保健食品被證實能有效預防失智症",
+                correct: false,
+                correctAnswer: "否，目前並沒任何特定一種食物或保健食品被證實能有效預防失智症",
+                yesNext: "gameover",
+                noNext: 15
+            },
+            12: {
+                text: "失智症與日常生活習慣無關?",
+                yesText: "是，失智症與日常生活習慣無關",
+                noText: "否，失智症與日常生活習慣有關",
+                correct: false,
+                correctAnswer: "否，失智症與日常生活習慣有關",
+                yesNext: 8,
+                noNext: 3
+            },
+            13: {
+                text: "一旦家中有人得失智症，全家人的未來生活都會因被牽絆而變黑白?",
+                yesText: "是，一旦家中有人得失智症，全家人的未來生活都會因被牽絆而變黑白",
+                noText: "否，即便家中有人得失智症，全家人的未來生活並不一定完全無望",
+                correct: false,
+                correctAnswer: "否，即便家中有人得失智症，全家人的未來生活並不一定完全無望",
+                yesNext: "gameover",
+                noNext: 29
+            },
+            14: {
+                text: "失智症可能合併憂鬱症或焦慮症?",
+                yesText: "是，失智症可能合併憂鬱症或焦慮症",
+                noText: "否，失智症不會合併憂鬱症或焦慮症",
+                correct: true,
+                correctAnswer: "是，失智症可能合併憂鬱症或焦慮症",
+                yesNext: 26,
+                noNext: 24
+            },
+            15: {
+                text: "目前沒有任何一種藥物能夠治癒或預防失智症?",
+                yesText: "是，目前沒有任何一種藥物能夠治癒或預防失智症",
+                noText: "否，目前已經有藥物能夠治癒或預防失智症",
+                correct: true,
+                correctAnswer: "是，目前沒有任何一種藥物能夠治癒或預防失智症",
+                yesNext: 22,
+                noNext: 11
+            },
+            16: {
+                text: "控制好血壓、血糖、血脂有助於預防失智症?",
+                yesText: "是，控制好血壓、血糖、血脂有助於預防失智症",
+                noText: "否，阿茲海默症與血壓、血糖、血脂無關",
+                correct: true,
+                correctAnswer: "是，控制好血壓、血糖、血脂有助於預防失智症",
+                yesNext: 20,
+                noNext: 8
+            },
+            17: {
+                text: "肥胖是罹患失智症的危險因子?",
+                yesText: "是，肥胖是罹患失智症的危險因子",
+                noText: "否，肥胖不是罹患失智症的危險因子",
+                correct: true,
+                correctAnswer: "是，肥胖是罹患失智症的危險因子",
+                yesNext: 19,
+                noNext: 25
+            },
+            18: {
+                text: "空汙是罹患失智症的危險因子?",
+                yesText: "是，空汙是罹患失智症的危險因子",
+                noText: "否，空汙不是罹患失智症的危險因子",
+                correct: true,
+                correctAnswer: "是，空汙是罹患失智症的危險因子",
+                yesNext: 25,
+                noNext: 24
+            },
+            19: {
+                text: "抽菸和過度飲酒皆是失智症的危險因子?",
+                yesText: "是，抽菸和過度飲酒皆是罹患失智症的危險因子",
+                noText: "否，抽菸和過度飲酒皆不是罹患失智症的危險因子",
+                correct: true,
+                correctAnswer: "是，抽菸和過度飲酒皆是罹患失智症的危險因子",
+                yesNext: 15,
+                noNext: 26
+            },
+            20: {
+                text: "「增進人際關係」和「學習新事物」有助於預防失智症?",
+                yesText: "是， 「增進人際關係」和「學習新事物」有助於預防失智症",
+                noText: "否， 「增進人際關係」和「學習新事物」無助於預防失智症",
+                correct: true,
+                correctAnswer: "是， 「增進人際關係」和「學習新事物」有助於預防失智症",
+                yesNext: 7,
+                noNext: 28
+            },
+            21: {
+                text: "規律運動或維持身體活動能降低罹患失智症的風險?",
+                yesText: "是，規律運動或維持身體活動能降低罹患失智症的風險",
+                noText: "否，規律運動或維持身體活動能並不能降低罹患失智症的風險",
+                correct: true,
+                correctAnswer: "是，規律運動或維持身體活動能降低罹患失智症的風險",
+                yesNext: 12,
+                noNext: 27
+            },
+            22: {
+                text: "「良好睡眠品質」能改善記憶力、情緒控管能力及決策力，因而降低失智症風險?",
+                yesText: "是，「良好睡眠品質」能改善記憶力、情緒控管能力及決策力，因而降低失智症風險",
+                noText: "否，「良好睡眠品質」與失智症較無關聯性",
+                correct: true,
+                correctAnswer: "是，「良好睡眠品質」能改善記憶力、情緒控管能力及決策力，因而降低失智症風險",
+                yesNext: 30,
+                noNext: "gameover"
+            },
+            23: {
+                text: "改善/維持良好飲食習慣有助於預防失智症? (ex:地中海飲食、得舒飲食、心智飲食)",
+                yesText: "是，改善/維持良好飲食習慣有助於預防失智症",
+                noText: "否，改善/維持良好飲食習慣無法幫助預防失智症",
+                correct: true,
+                correctAnswer: "是，改善/維持良好飲食習慣有助於預防失智症",
+                yesNext: 21,
+                noNext: 9
+            },
+            24: {
+                text: "早在被診斷為失智症的 20 年前，腦細胞可能就已經開始病變和衰退了?",
+                yesText: "是，早在被診斷為失智症的 20 年前，腦細胞可能就已經開始病變和衰退了",
+                noText: "否，腦細胞在發病前一兩年才會開始病變和衰退",
+                correct: true,
+                correctAnswer: "是，早在被診斷為失智症的 20 年前，腦細胞可能就已經開始病變和衰退了",
+                yesNext: 14,
+                noNext: 27
+            },
+            25: {
+                text: "異常多疑、易怒等「情緒性格改變」是失智症的警訊?",
+                yesText: "是，異常多疑、易怒等「情緒性格改變」是失智症的警訊",
+                noText: "否，異常多疑、易怒等「情緒性格改變」不是失智症的警訊",
+                correct: true,
+                correctAnswer: "是，異常多疑、易怒等「情緒性格改變」是失智症的警訊",
+                yesNext: 17,
+                noNext: 14
+            },
+            26: {
+                text: "「社交萎縮」和「無法勝任原本熟悉事務」是失智症的警訊?",
+                yesText: "是，「社交萎縮」和「無法勝任原本熟悉事務」是失智症的警訊",
+                noText: "否，「社交萎縮」和「無法勝任原本熟悉事務」不是失智症的警訊",
+                correct: true,
+                correctAnswer: "是，「社交萎縮」和「無法勝任原本熟悉事務」是失智症的警訊",
+                yesNext: 19,
+                noNext: "gameover"
+            },
+            27: {
+                text: "「妄想」和「幻覺」是失智症患者可能發展出的精神症狀?",
+                yesText: "是， 「妄想」和「幻覺」是失智症患者可能發展出的精神症狀",
+                noText: "否，失智症患者並不會發展出「妄想」和「幻覺」的精神症狀",
+                correct: true,
+                correctAnswer: "是， 「妄想」和「幻覺」是失智症患者可能發展出的精神症狀",
+                yesNext: 24,
+                noNext: 29
+            },
+            28: {
+                text: "「攻擊行為」、「病態收集」、「漫遊」、「迷路」、「重複現象」皆為失智症患者可能發展出的行為症狀?",
+                yesText: "是，「攻擊行為」、「病態收集」、「漫遊」、「迷路」、「重複現象」皆為失智症患者可能發展出的行為症狀",
+                noText: "否，失智症患者並不會發展出「攻擊行為」、「病態收集」、「漫遊」、「迷路」、「重複現象」的精行為症狀",
+                correct: true,
+                correctAnswer: "是，「攻擊行為」、「病態收集」、「漫遊」、「迷路」、「重複現象」皆為失智症患者可能發展出的行為症狀",
+                yesNext: 20,
+                noNext: 8
+            },
+            29: {
+                text: "聽力障礙者罹患失智症的風險比聽力正常者高近 2 倍?",
+                yesText: "是，聽力障礙者罹患失智症的風險比聽力正常者高近 2 倍",
+                noText: "否，聽力障礙與失智症並無關聯",
+                correct: true,
+                correctAnswer: "是，聽力障礙者罹患失智症的風險比聽力正常者高近 2 倍",
+                yesNext: 27,
+                noNext: 13
+            },
+            30: {
+                text: "中風及慢性腦血管病變也可能導致失智症?",
+                yesText: "是，中風及慢性腦血管病變也可能導致失智症",
+                noText: "否，中風及慢性腦血管病變並不會導致失智症",
+                correct: true,
+                correctAnswer: "是，中風及慢性腦血管病變也可能導致失智症",
+                yesNext: "finish",
+                noNext: 22
+            }
+        };
+
+        let canvas, ctx;
+        let currentQuestion = 2;
+        let answerHistory = [];
+        let isAnimating = false;
+        let cellSize;
+        let positions = {};
+
+        function drawMaze() {
+            canvas = document.getElementById('mazeCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            const container = document.getElementById('mazeContainer');
+            const containerWidth = container.offsetWidth;
+            canvas.width = containerWidth;
+            canvas.height = containerWidth;
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // Calculate cell size
+            cellSize = w / 20;
+            
+            // Clear positions
+            positions = {};
+            
+            // Draw grid
+            for (let row = 0; row < grid.length; row++) {
+                for (let col = 0; col < grid[row].length; col++) {
+                    const cell = grid[row][col];
+                    const x = col * cellSize;
+                    const y = row * cellSize;
+                    
+                    // Draw cell background
+                    if (cell === 0) {
+                        // Green grass
+                        ctx.fillStyle = '#a8c686';
+                    } else if (cell === 1) {
+                        // Gray path
+                        ctx.fillStyle = '#b8b5a8';
+                    } else if (cell === 2) {
+                        // Start point (gray path)
+                        ctx.fillStyle = '#b8b5a8';
+                    } else if (cell === 3) {
+                        // End point - 先繪製灰色背景，房屋稍後繪製
+                        ctx.fillStyle = '#b8b5a8';
+                    } else if (cell === 4) {
+                        // Yellow circle position (gray path)
+                        ctx.fillStyle = '#b8b5a8';
+                    }
+                    
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                    
+                    // Draw yellow circles for question positions
+                    if (cell === 4) {
+                        const key = `${row},${col}`;
+                        const questionNum = gridToQuestionMap[key];
+                        
+                        if (questionNum) {
+                            const centerX = x + cellSize / 2;
+                            const centerY = y + cellSize / 2;
+                            const radius = cellSize * 0.35;
+                            
+                            // Store position
+                            positions[questionNum] = { x: centerX, y: centerY };
+                            
+                            // Draw yellow circle
+                            ctx.fillStyle = '#f4e296';
+                            ctx.beginPath();
+                            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                            ctx.fill();
+                            
+                            // Border
+                            ctx.strokeStyle = '#d4c276';
+                            ctx.lineWidth = 2.5;
+                            ctx.stroke();
+                            
+                            // Number text
+                            ctx.fillStyle = '#333';
+                            ctx.font = `bold ${radius * 0.9}px 'Noto Sans TC', sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(questionNum, centerX, centerY);
+                        }
+                    }
+                }
+            }
+            
+            // Draw house at the end (占據四格: 18-15, 18-16, 19-15, 19-16)
+            const houseStartRow = 18;
+            const houseStartCol = 15;
+            const houseX = houseStartCol * cellSize;
+            const houseY = houseStartRow * cellSize;
+            const houseW = cellSize * 2;  // 佔據兩格寬
+            const houseH = cellSize * 2;  // 佔據兩格高
+            
+            // Store finish position (房屋中心)
+            positions['finish'] = { x: houseX + cellSize, y: houseY + cellSize };
+            
+            // House body
+            ctx.fillStyle = '#f4a5a5';
+            ctx.fillRect(houseX, houseY + houseH * 0.3, houseW, houseH * 0.5);
+            ctx.strokeStyle = '#c77';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(houseX, houseY + houseH * 0.3, houseW, houseH * 0.5);
+            
+            // Roof
+            ctx.fillStyle = '#e57373';
+            ctx.beginPath();
+            ctx.moveTo(houseX - houseW * 0.05, houseY + houseH * 0.3);
+            ctx.lineTo(houseX + houseW * 0.5, houseY + houseH * 0.05);
+            ctx.lineTo(houseX + houseW * 1.05, houseY + houseH * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Door
+            ctx.fillStyle = '#90caf9';
+            ctx.fillRect(houseX + houseW * 0.4, houseY + houseH * 0.55, houseW * 0.2, houseH * 0.25);
+            
+            // Windows
+            ctx.fillStyle = '#81d4fa';
+            ctx.fillRect(houseX + houseW * 0.15, houseY + houseH * 0.45, houseW * 0.15, houseH * 0.15);
+            ctx.fillRect(houseX + houseW * 0.7, houseY + houseH * 0.45, houseW * 0.15, houseH * 0.15);
+            
+            // Circle on roof
+            ctx.fillStyle = '#81d4fa';
+            ctx.beginPath();
+            ctx.arc(houseX + houseW * 0.5, houseY + houseH * 0.15, houseW * 0.06, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#64b5f6';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw start icon
+            const startX = 2 * cellSize + cellSize / 2;
+            const startY = 1 * cellSize + cellSize / 2;
+            const iconSize = cellSize * 0.6;
+            
+            ctx.save();
+            ctx.translate(startX - iconSize, startY);
+            
+            // Grandma head
+            ctx.fillStyle = '#fdd';
+            ctx.beginPath();
+            ctx.arc(0, 0, iconSize * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Hair
+            ctx.fillStyle = '#ddd';
+            ctx.beginPath();
+            ctx.arc(-iconSize * 0.2, -iconSize * 0.2, iconSize * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(iconSize * 0.2, -iconSize * 0.2, iconSize * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Arrow
+            ctx.strokeStyle = '#e57373';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(iconSize * 0.7, 0);
+            ctx.lineTo(iconSize * 1.5, 0);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(iconSize * 1.5, 0);
+            ctx.lineTo(iconSize * 1.3, -iconSize * 0.15);
+            ctx.moveTo(iconSize * 1.5, 0);
+            ctx.lineTo(iconSize * 1.3, iconSize * 0.15);
+            ctx.stroke();
+            
+            ctx.restore();
+            
+            // Draw tree in bottom left
+            const treeX = 5 * cellSize;
+            const treeY = 18.5 * cellSize;
+            
+            // Trunk
+            ctx.fillStyle = '#8b6f4e';
+            ctx.fillRect(treeX, treeY, cellSize * 0.15, cellSize * 0.3);
+            
+            // Foliage
+            ctx.fillStyle = '#81c784';
+            ctx.beginPath();
+            ctx.arc(treeX - cellSize * 0.05, treeY + cellSize * 0.05, cellSize * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(treeX + cellSize * 0.08, treeY - cellSize * 0.03, cellSize * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(treeX + cellSize * 0.2, treeY + cellSize * 0.05, cellSize * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function startGame() {
+            document.getElementById('storyScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            initializeGame();
+        }
+
+        function initializeGame() {
+            currentQuestion = 2;
+            answerHistory = [];
+            drawMaze();
+            
+            // 先將郝婆婆放在起點 (1,2)
+            const grandma = document.getElementById('grandmaChar');
+            const startPos = { x: 2 * cellSize + cellSize / 2, y: 1 * cellSize + cellSize / 2 };
+            grandma.style.left = startPos.x + 'px';
+            grandma.style.top = startPos.y + 'px';
+            
+            // 等待1秒後，郝婆婆移動到2號位置，然後顯示第一題
+            setTimeout(() => {
+                moveGrandmaTo(2);
+                setTimeout(() => {
+                    displayQuestion(2);
+                    // 自動滾動到題目區域
+                    setTimeout(() => {
+                        document.getElementById('questionPanel').scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                    }, 300);
+                }, 1500); // 等待移動動畫完成
+            }, 1000);
+        }
+
+        function moveGrandmaTo(questionNum) {
+            const grandma = document.getElementById('grandmaChar');
+            const pos = positions[questionNum];
+            
+            if (!pos) return;
+            
+            grandma.style.left = pos.x + 'px';
+            grandma.style.top = pos.y + 'px';
+        }
+
+        function displayQuestion(questionNum) {
+            const question = questions[questionNum];
+            const panel = document.getElementById('questionPanel');
+            
+            document.getElementById('questionNumber').textContent = `題目 ${questionNum}`;
+            document.getElementById('questionText').textContent = question.text;
+            document.getElementById('yesButton').textContent = question.yesText;
+            document.getElementById('noButton').textContent = question.noText;
+            
+            document.getElementById('yesButton').disabled = false;
+            document.getElementById('noButton').disabled = false;
+            
+            // 顯示題目面板
+            panel.classList.add('show');
+        }
+
+        function answerQuestion(isYes) {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            const question = questions[currentQuestion];
+            const userCorrect = (isYes === question.correct);
+            
+            // Disable buttons
+            document.getElementById('yesButton').disabled = true;
+            document.getElementById('noButton').disabled = true;
+            
+            // Record answer
+            answerHistory.push({
+                questionNum: currentQuestion,
+                question: question.text,
+                userAnswer: isYes,
+                correct: userCorrect,
+                correctAnswer: question.correctAnswer
+            });
+            
+            // Show feedback
+            showFeedback(userCorrect, question.correctAnswer);
+            
+            // Determine next position
+            const nextPos = isYes ? question.yesNext : question.noNext;
+            
+            setTimeout(() => {
+                hideFeedback();
+                
+                // Scroll to maze to see grandma movement
+                const mazeContainer = document.getElementById('mazeContainer');
+                mazeContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                if (nextPos === "gameover") {
+                    showGameOver();
+                    isAnimating = false;
+                } else if (nextPos === "finish") {
+                    setTimeout(() => {
+                        moveGrandmaTo('finish');
+                        setTimeout(() => {
+                            showResults();
+                            isAnimating = false;
+                        }, 1500);
+                    }, 300);
+                } else {
+                    setTimeout(() => {
+                        moveGrandmaTo(nextPos);
+                        setTimeout(() => {
+                            currentQuestion = nextPos;
+                            displayQuestion(nextPos);
+                            // Scroll to question panel after movement
+                            setTimeout(() => {
+                                document.getElementById('questionPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                            isAnimating = false;
+                        }, 1600);
+                    }, 300);
+                }
+            }, 2000);
+        }
+
+        function showFeedback(isCorrect, correctAnswer) {
+            const feedbackScreen = document.getElementById('feedbackScreen');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackAnswer = document.getElementById('feedbackAnswer');
+            
+            feedbackIcon.textContent = isCorrect ? '🎉' : '😔';
+            feedbackTitle.textContent = isCorrect ? '恭喜你答對了！' : '噢~好可惜答錯了！請繼續加油';
+            feedbackTitle.className = 'feedback-title ' + (isCorrect ? 'correct' : 'incorrect');
+            feedbackAnswer.textContent = '正確答案：' + correctAnswer;
+            
+            feedbackScreen.style.display = 'flex';
+        }
+
+        function hideFeedback() {
+            document.getElementById('feedbackScreen').style.display = 'none';
+        }
+
+        function showGameOver() {
+            document.getElementById('gameoverScreen').style.display = 'flex';
+        }
+
+        function showResults() {
+            document.getElementById('gameScreen').style.display = 'none';
+            const resultScreen = document.getElementById('resultScreen');
+            resultScreen.style.display = 'block';
+            
+            const correctCount = answerHistory.filter(a => a.correct).length;
+            const totalCount = answerHistory.length;
+            
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('totalCount').textContent = totalCount;
+            
+            const reviewDiv = document.getElementById('answersReview');
+            reviewDiv.innerHTML = '<h3 style="margin-bottom: 20px; color: var(--warm-brown); font-size: 1.4rem;">作答紀錄</h3>';
+            
+            answerHistory.forEach(answer => {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'answer-item';
+                answerDiv.innerHTML = `
+                    <div class="answer-item-header">
+                        題目 ${answer.questionNum}
+                        <span class="answer-status ${answer.correct ? 'correct' : 'incorrect'}">
+                            ${answer.correct ? '✓ 答對' : '✗ 答錯'}
+                        </span>
+                    </div>
+                    <div class="answer-item-content">
+                        <strong>問題：</strong>${answer.question}<br>
+                        <strong>正確答案：</strong>${answer.correctAnswer}
+                    </div>
+                `;
+                reviewDiv.appendChild(answerDiv);
+            });
+        }
+
+        function restartGame() {
+            document.getElementById('gameoverScreen').style.display = 'none';
+            document.getElementById('resultScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            initializeGame();
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (document.getElementById('gameScreen').style.display === 'block') {
+                drawMaze();
+                moveGrandmaTo(currentQuestion);
+            }
+        });
+    </script>
+</body>
+</html>
